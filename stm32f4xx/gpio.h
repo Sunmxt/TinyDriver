@@ -1,0 +1,32 @@
+#ifndef TDRV_GPIO_STM32F4XX
+#define TDRV_GPIO_STM32F4XX
+
+#include "stm32f4xx.h"
+#include "../gpio.h"
+
+#define TDRV_GPIO_AF1       TDRV_GPIO_PERIPHERAL_1   
+#define TDRV_GPIO_AF2       TDRV_GPIO_PERIPHERAL_2   
+#define TDRV_GPIO_AF3       TDRV_GPIO_PERIPHERAL_3   
+#define TDRV_GPIO_AF4       TDRV_GPIO_PERIPHERAL_4   
+#define TDRV_GPIO_AF5       TDRV_GPIO_PERIPHERAL_5   
+#define TDRV_GPIO_AF6       TDRV_GPIO_PERIPHERAL_6   
+#define TDRV_GPIO_AF7       TDRV_GPIO_PERIPHERAL_7   
+#define TDRV_GPIO_AF8       TDRV_GPIO_PERIPHERAL_8   
+#define TDRV_GPIO_AF9       TDRV_GPIO_PERIPHERAL_9   
+#define TDRV_GPIO_AF10      TDRV_GPIO_PERIPHERAL_10  
+#define TDRV_GPIO_AF11      TDRV_GPIO_PERIPHERAL_11  
+#define TDRV_GPIO_AF12      TDRV_GPIO_PERIPHERAL_12  
+#define TDRV_GPIO_AF13      TDRV_GPIO_PERIPHERAL_13  
+#define TDRV_GPIO_AF14      TDRV_GPIO_PERIPHERAL_14  
+#define TDRV_GPIO_AF15      TDRV_GPIO_PERIPHERAL_15  
+#define TDRV_GPIO_AF16      TDRV_GPIO_PERIPHERAL_16  
+
+typedef struct GPIO_Information_STM32F4
+{
+    Word number_of;
+    GPIO_TypeDef *regs;
+}GPIOInfoSTM32F4;
+
+extern TDrvGPIOInterface GPIOInterface;
+
+#endif
