@@ -46,9 +46,16 @@ typedef struct _Tiny_Driver_I2C_Message
     #define TDRV_I2C_MSG_BUSY_POS       3
     #define TDRV_I2C_MSG_BUSY           (1u << TDRV_I2C_MSG_BUSY_POS)
     /*
+        Transfer failed
+        
+            Message is not successfully sent.
+    */
+    #define TDRV_I2C_FAILED_POS         4
+    #define TDRV_I2C_FAILED             (1u << TDRV_I2C_FAILED_POS)
+    /*
         Private Field (driver)
     */
-    #define TDRV_I2C_MSG_PRIVATE_FLAGS_POS  4
+    #define TDRV_I2C_MSG_PRIVATE_FLAGS_POS  5
     #define TDRV_I2C_MSG_PRIVATE_FLAGS  (0xFFu << TDRV_I2C_MSG_PRIVATE_FLAGS_POS)
 
 
@@ -59,10 +66,8 @@ typedef struct _Tiny_Driver_I2C_Message
     void *data;
     size_t size;
 
-    union {
-        void* callback_params;
-        void* failed_info;
-    };
+    void* callback_params;
+    void* failed_info;
 
     void* (*callback)(struct _Tiny_Driver_I2C_Message *msg);
 
@@ -70,24 +75,37 @@ typedef struct _Tiny_Driver_I2C_Message
 }TDrvI2CMessage;
 
 #define TDRV_TO_I2C_MSG(_ptr) S_LIST_TO_DATA(_ptr, TDrvI2CMessage, node)
-#define TDrvI2CMessageInit(_message, _address, _data, _size) \
-    ((_message) -> attribute = 0, (_message) -> address = _address, (_message) -> data = _data, (_message) -> size = _size, (_message) -> node.next = 0, (_message) -> node.prev = 0, 0)
+
+
+#define TDrvI2CMessageInit(_message, _flags) \
+    ((_message) -> attribute = _flags, \
+     (_message) -> node.next = 0, (_message) -> node.prev = 0, \
+     (_message) -> callback = 0, 1)
+
+#define TDrvI2CMessageInitAsRead(_message) \
+    TDrvI2CMessageInit(_message, TDRV_I2C_MSG_RECEIVE);
+#define TDrvI2CMessageInitAsWrite(_message) \
+    TDrvI2CMessageInit(_message, 0);
+#define TDrvI2CMessageLink(_message, _message_successor, _restart) \
+    ((_message) -> node.prev = &(_message_successor) -> node\
+     , (_restart ? ((_message) -> attribute |= TDRV_I2C_MSG_RESTART|TDRV_I2C_MSG_PACKED) : ((_message) -> attribute |= TDRV_I2C_MSG_PACKED)), 0)
 
 
 typedef enum _I2C_Address_Mode { I2C_7BIT_ADDR, I2C_10BIT_ADDR} I2CAddressMode;
 typedef enum _I2C_Speed {I2C_FAST_400KBPS, I2C_NORMAL_100KBPS} I2CSpeed;
 
-typedef TDRVStatus (*TDrvI2CConfig)(TDevice *_device, I2CAddressMode _addr_mode, I2CSpeed _speed);
-typedef TDRVStatus (*TDrvI2CSendMessageAsync)(TDevice *_device, TDrvI2CMessage *_message);
-typedef TDRVStatus (*TDrvI2CReceiveMessageAsync)(TDevice *_device, TDrvI2CMessage *_message);
-
 typedef struct _Tiny_Driver_I2C_Interface
 {
     TDrvHAInit init;
     TDrvHADeinit deinit;
-    TDrvI2CSendMessageAsync SendAsync;
-    TDrvI2CReceiveMessageAsync ReceiveAsync;
-    TDrvI2CConfig Config;
+    /*
+        Put I2C messages into queue (and send them).
+    @params:
+        _device     : I2C Device
+        _message    : Pointer to a chain of I2C messages.
+    */
+    TDRVStatus (*Put)(TDevice *_device, TDrvI2CMessage *_messages);
+    TDRVStatus (*Config)(TDevice *_device, I2CAddressMode _addr_mode, I2CSpeed _speed);
 }TDrvI2CInterface;
 
 extern TDrvI2CInterface I2CInterface;

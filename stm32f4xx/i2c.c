@@ -202,6 +202,7 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
             msg = _meta -> running_msg;
             _meta -> running_msg = TDRV_TO_I2C_MSG(node);
 
+
             //If no restart condition is needed, generate stop condition.
             if( !(msg -> attribute & TDRV_I2C_MSG_RESTART
                 && msg -> attribute & TDRV_I2C_MSG_PACKED) )
@@ -220,9 +221,10 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
 
             _meta -> running_msg = TDRV_TO_I2C_MSG(node);
             i2c_dma_realloc_stream(_meta, _meta -> running_msg -> attribute & TDRV_I2C_MSG_RECEIVE);
-            I2C_AnalogFilterCmd(_meta -> regs, ENABLE);
-            I2C_DigitalFilterConfig(_meta -> regs, 0x0F);
+            //I2C_AnalogFilterCmd(_meta -> regs, ENABLE);
+            //I2C_DigitalFilterConfig(_meta -> regs, 0x0F);
             I2C_Cmd(_meta -> regs, ENABLE);
+            I2C_AcknowledgeConfig(_meta -> regs, ENABLE);
         }
 
         I2C_ITConfig(_meta -> regs, I2C_IT_EVT, ENABLE);
@@ -386,9 +388,11 @@ TDRVStatus i2c_deinit(TDevice *_device)
     return TDRV_OK;
 }
 
-TDRVStatus i2c_reconfigure(TDrvI2CMeta *meta, I2CAddressMode _addr_mode, I2CSpeed _speed)
+TDRVStatus i2c_reconfigure(TDevice *_device, I2CAddressMode _addr_mode, I2CSpeed _speed)
 {
+    TDrvI2CMeta *meta;
     uint8_t old, chg, target;
+    meta = EXTRACT_I2C_META(_device);
     
     target = 0;
     if(_addr_mode == I2C_10BIT_ADDR)
@@ -435,7 +439,7 @@ TDRVStatus i2c_update_hardware(TDrvI2CMeta *meta)
             init.I2C_ClockSpeed = 400000;
         else
             init.I2C_ClockSpeed = 100000;
-        init.I2C_DutyCycle = I2C_DutyCycle_2;
+        init.I2C_DutyCycle = I2C_DutyCycle_16_9;
         init.I2C_Mode = I2C_Mode_I2C;
         init.I2C_OwnAddress1 = 0;
 
@@ -445,37 +449,20 @@ TDRVStatus i2c_update_hardware(TDrvI2CMeta *meta)
     return TDRV_OK;
 }
 
-TDRVStatus i2c_queue_message(TDrvI2CMeta *_meta, TDrvI2CMessage *_message)
+TDRVStatus i2c_queue_message(TDevice *_device, TDrvI2CMessage *_message)
 {
+    TDrvI2CMeta *meta;
     uint8_t old_flags;
+    
+    meta = EXTRACT_I2C_META(_device);
+    i2c_update_hardware(meta);
 
     _message -> attribute |= TDRV_I2C_MSG_BUSY;
-    old_flags = TDrvCriticalQueuePush(&_meta -> queue, &_message -> node, I2C_RUNNING | I2C_NEW_MESSAGE);
+    old_flags = TDrvCriticalQueuePush(&meta -> queue, &_message -> node, I2C_RUNNING | I2C_NEW_MESSAGE);
     if(!(old_flags & I2C_RUNNING))
-        return i2c_try_start_transfer(_meta);
+        return i2c_try_start_transfer(meta);
 
     return TDRV_OK;
-}
-
-TDRVStatus i2c_send_async(TDevice *_device, TDrvI2CMessage* _message)
-{
-    TDrvI2CMeta *meta;
-    meta = EXTRACT_I2C_META(_device);
-
-    _message -> attribute &= ~TDRV_I2C_MSG_RECEIVE;
-    i2c_update_hardware(meta);
-    return i2c_queue_message(meta, _message);
-}
-
-TDRVStatus i2c_recieve_async(TDevice *_device, TDrvI2CMessage* _message)
-{
-    TDrvI2CMeta *meta;
-    meta = EXTRACT_I2C_META(_device);
-
-    _message -> attribute |= TDRV_I2C_MSG_RECEIVE;
-    
-    i2c_update_hardware(meta);
-    return i2c_queue_message(meta, _message);
 }
 
 void i2c_error_handle(TDrvI2CMeta *_meta)
@@ -586,7 +573,7 @@ void I2C3_ER_IRQHandler(void)
 TDrvI2CInterface I2CInterface = {
     i2c_init
     , i2c_deinit
-    , i2c_send_async
-    , i2c_recieve_async
+    , i2c_queue_message
+    , i2c_reconfigure
 };
 

@@ -42,11 +42,9 @@ typedef struct _Tiny_Driver_I2C_Device_Meta
 
 
 #define TDRV_I2C_FAILED_DMA_POS     (TDRV_I2C_MSG_PRIVATE_FLAGS_POS + 0)
-#define TDRV_I2C_FAILED_POS         (TDRV_I2C_MSG_PRIVATE_FLAGS_POS + 1)
-#define TDRV_I2C_FINISH_POS         (TDRV_I2C_MSG_PRIVATE_FLAGS_POS + 2)
+#define TDRV_I2C_FINISH_POS         (TDRV_I2C_MSG_PRIVATE_FLAGS_POS + 1)
 
 #define TDRV_I2C_FAILED_DMA         (1u << TDRV_I2C_FAILED_DMA_POS)
-#define TDRV_I2C_FAILED             (1u << TDRV_I2C_FAILED_POS)
 #define TDRV_I2C_FINISH             (1u << TDRV_I2C_FINISH_POS)
 
 /*
