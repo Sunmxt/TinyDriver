@@ -4,11 +4,29 @@
 #include "..\i2c.h"
 #include "..\dma.h"
 #include "..\queue.h"
-#include "hal_tab.h"
+
+/*
+    Specific and compatiable I2C interface for stm32f4xx
+*/
+typedef struct _Tiny_Driver_I2C_Interface_STM32F4xx
+{
+    TDrvHAInit init;
+    TDrvHADeinit deinit;
+
+    TDRVStatus (*Put)(TDevice *_device, TDrvI2CMessage *_message);
+    TDRVStatus (*Config)(TDevice *_device, I2CAddressMode _addr_mode, I2CSpeed _speed);
+    TDRVStatus (*LoadDMAInfo)(TDevice *_device, TDevice *_dma1_device);
+}STM32F4xx_I2CInterfaceType;
+
+extern STM32F4xx_I2CInterfaceType I2CInterface;
+
+#define TDRV_STM32F4XX_I2C_API(_device) TDRV_API(STM32F4xx_I2CInterfaceType, _device)
 
 typedef struct _Tiny_Driver_I2C_Device_Meta
 {
     I2C_TypeDef *regs;
+    TDevice *dma1_device;
+
     uint8_t flags;
     /*
         Low
@@ -35,6 +53,7 @@ typedef struct _Tiny_Driver_I2C_Device_Meta
     //bi_list_node *add_msgs;
     int8_t dma_stream;
 }TDrvI2CMeta;
+
 
 /*
     I2C Message Private Field

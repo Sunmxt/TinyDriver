@@ -108,8 +108,8 @@ typedef struct _Tiny_Driver_I2C_Interface
     TDRVStatus (*Config)(TDevice *_device, I2CAddressMode _addr_mode, I2CSpeed _speed);
 }TDrvI2CInterface;
 
-extern TDrvI2CInterface I2CInterface;
+//extern TDrvI2CInterface I2CInterface;
 
-#define TDRV_I2C_API(_index) TDRV_API(TDrvI2CInterface, _index)
+#define TDRV_I2C_API(_driver) TDRV_API(TDrvI2CInterface, _driver)
 
 #endif
