@@ -9,6 +9,8 @@
 #ifndef TINY_DRIVER_HEADERS
 #define TINY_DRIVER_HEADERS
 
+/* Compile time assert */
+
 #include "atomic.h"
 
 typedef unsigned char Byte;
@@ -36,23 +38,23 @@ typedef int TDRVStatus;
 
 typedef struct _Tiny_Driver_Device
 {
-    char *name;
+    const char* name;
     void* private_data;
 
     struct _Driver_Interface
     {
-        Byte vendor;
-        #define TDRV_DIV_UNKNOWN         0
+        const char* vendor;
+        #define TDRV_DIV_UNKNOWN        0
         #define TDRV_DIV_TINY_DRIVER    1
         #define TDRV_DIV_OTHERS         10
 
-        Word version;
-        Byte type;
+        uint16_t version;
+        uint16_t type;
         #define TDRV_IT_TDRV_GPIO       1
         #define TDRV_IT_TDRV_TIMER      2
-        #define TDRV_IT_TDRV_DMA_TYPE1  3
-        #define TDRV_IT_TDRV_TIMER1     4
-        #define TDRV_IT_TDRV_I2C        5
+        #define TDRV_IT_TDRV_DMA        3
+        #define TDRV_IT_TDRV_I2C        4
+        #define TDRV_IT_SENSOR          5
         
         struct _Tiny_Driver_Hardware_Abstract_Interface *interfaces;
     }driver;
@@ -68,8 +70,9 @@ typedef struct _Tiny_Driver_Hardware_Abstract_Interface
 }TDrvHAInterface;
 
 
-extern TDevice *PeripheralTable;
-#define TDRV_API(_interface_type, _index) (*((_interface_type*)PeripheralTable[_index].driver.interfaces))
+// #define TDRV_API(_interface_type, _index) (*((_interface_type*)PeripheralTable[_index].driver.interfaces))
+#define TDRV_BASIC_API(_device) (*((TDrvHAInterface*)((TDevice*)_device) -> driver.interfaces))
+#define TDRV_API(_interface_type, _device_ptr) (*((_interface_type*)((TDevice*)_device_ptr) -> driver.interfaces))
 
 TDRVStatus TinyDriverLoad(TDevice *_instance);
 TDRVStatus TinyDriverUnload(TDevice *_instance);

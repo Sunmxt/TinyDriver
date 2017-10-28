@@ -23,7 +23,7 @@ TDRVStatus i2c_dma_realloc_stream(TDrvI2CMeta *_meta, uint8_t _is_receive)
     
     // free stream
     if(_meta -> dma_stream >= 0)
-        TDRV_DMA_API(DMA_1).StreamFree(PeripheralTable + DMA_1, _meta -> dma_stream);
+        TDRV_DMA_API(_meta -> dma1_device).StreamFree(_meta -> dma1_device, _meta -> dma_stream);
 
     dma_mode = TDRV_DMA_MEM_8BIT|TDRV_DMA_DEV_8BIT|TDRV_DMA_MEM_INC;
     if(_is_receive)
@@ -31,28 +31,28 @@ TDRVStatus i2c_dma_realloc_stream(TDrvI2CMeta *_meta, uint8_t _is_receive)
         switch((unsigned int)_meta -> regs)
         {
         case I2C1_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 0))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 0))
                 _meta -> dma_stream = 0;
-            else if( TDRV_OK != TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 0))
+            else if( TDRV_OK != TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 0))
                 _meta -> dma_stream = 5;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 1);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 1);
             break;
         case I2C2_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 2))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 2))
                 _meta -> dma_stream = 2;
-            else if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_2, 3))
+            else if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 3))
                 _meta -> dma_stream = 3;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 7);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 7);
         case I2C3_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 2))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 2))
                 _meta -> dma_stream = 2;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 3);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 3);
         }
         if(TDRV_OK != status)
             return status;
@@ -64,35 +64,35 @@ TDRVStatus i2c_dma_realloc_stream(TDrvI2CMeta *_meta, uint8_t _is_receive)
         switch((unsigned int)_meta -> regs)
         {
         case I2C1_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 6))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 6))
                 _meta -> dma_stream = 6;
-            else if(TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 7))
+            else if(TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 7))
                 _meta -> dma_stream = 7;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 1);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 1);
             break;
         case I2C2_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 7))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 7))
                 _meta -> dma_stream = 7;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 7);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 7);
             break;
         case I2C3_BASE:
-            if( TDRV_OK == TDRV_DMA_API(DMA_1).StreamAlloc(PeripheralTable + DMA_1, 4))
+            if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 4))
                 _meta -> dma_stream = 4;
             else
                 return TDRV_BUSY;
-            status = TDRV_DMA_API(DMA_1).StreamConnect(PeripheralTable + DMA_1, _meta -> dma_stream, 3);
+            status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 3);
             break;
         }
         dma_mode |= TDRV_DMA_MEM2DEV;
     }
 
-    status = TDRV_DMA_API(DMA_1).SetMode(PeripheralTable + DMA_1, _meta -> dma_stream, dma_mode);
-    TDRV_DMA_API(DMA_1).SetCallback(PeripheralTable + DMA_1, _meta -> dma_stream, i2c_dma_callback, _meta);
-    TDRV_DMA_API(DMA_1).GetCapability(PeripheralTable + DMA_1, &dma_cap);
+    status = TDRV_DMA_API(_meta -> dma1_device).SetMode(_meta -> dma1_device, _meta -> dma_stream, dma_mode);
+    TDRV_DMA_API(_meta -> dma1_device).SetCallback(_meta -> dma1_device, _meta -> dma_stream, i2c_dma_callback, _meta);
+    TDRV_DMA_API(_meta -> dma1_device).GetCapability(_meta -> dma1_device, &dma_cap);
 
     _meta -> split_size = dma_cap.max_buffer_size;
 
@@ -130,7 +130,7 @@ TDRVStatus i2c_dma_load_message(TDrvI2CMeta *_meta, size_t *_loaded_size)
     
     if(new_size)
     {
-        status = TDRV_DMA_API(DMA_1).StartTransfer(PeripheralTable + DMA_1, _meta -> dma_stream
+        status = TDRV_DMA_API(_meta -> dma1_device).StartTransfer(_meta -> dma1_device, _meta -> dma_stream
                     , (uint8_t*)_meta -> running_msg -> data + _meta ->send_ptr
                     , (void*)&_meta -> regs -> DR, new_size);
         _meta -> send_ptr += new_size;
@@ -145,8 +145,8 @@ uint32_t i2c_try_stop(TDrvI2CMeta *_meta)
 {
     uint8_t old, chg;
 
-    TDRV_DMA_API(DMA_1).Stop(PeripheralTable + DMA_1, _meta -> dma_stream);
-    TDRV_DMA_API(DMA_1).StreamFree(PeripheralTable + DMA_1, _meta -> dma_stream);
+    TDRV_DMA_API(_meta -> dma1_device).Stop(_meta -> dma1_device, _meta -> dma_stream);
+    TDRV_DMA_API(_meta -> dma1_device).StreamFree(_meta -> dma1_device, _meta -> dma_stream);
     _meta -> dma_stream = -1;
     I2C_GenerateSTOP(_meta -> regs, ENABLE);
     I2C_DMACmd(_meta -> regs, DISABLE);
@@ -176,6 +176,9 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
     bi_list_node *node;
     TDrvI2CMessage *msg;
     size_t loaded;
+
+    if(!_meta -> dma1_device)
+        return TDRV_ILLEGAL_STATE;
 
     //lock-free i2c launch precedure.
     for(;;)
@@ -275,7 +278,7 @@ void* i2c_dma_callback(Byte _dma_event, void* _event_param, void* _user_param)
             if(!new_size)
             {
                 I2C_DMACmd(meta -> regs, DISABLE);
-                TDRV_DMA_API(DMA_1).Stop(PeripheralTable + DMA_1, meta -> dma_stream);
+                TDRV_DMA_API(meta -> dma1_device).Stop(meta -> dma1_device, meta -> dma_stream);
             }
         break;
     case TDRV_DMA_HARDWARE_ERROR:
@@ -347,6 +350,21 @@ TDRVStatus i2c_init(TDevice *_device)
     meta -> running_msg = 0;
 
     meta -> dma_stream = -1;
+    meta -> dma1_device = 0;
+
+    return TDRV_OK;
+}
+
+TDRVStatus i2c_load_dma_info(TDevice *_device, TDevice *_dma1_device)
+{
+    TDrvI2CMeta *meta;
+    #ifndef TDRV_NO_PARAMETER_CHECK
+        if(!_device || !_dma1_device)
+            return TDRV_INVAILD_PARAMETER;
+    #endif
+
+    meta = EXTRACT_I2C_META(_device);
+    meta -> dma1_device = _dma1_device;
 
     return TDRV_OK;
 }
@@ -570,10 +588,11 @@ void I2C3_ER_IRQHandler(void)
 { i2c_error_handle(EXTRACT_I2C_META(i2c_devices_map[2])); }
 
 // interfaces export
-TDrvI2CInterface I2CInterface = {
+STM32F4xx_I2CInterfaceType I2CInterface = {
     i2c_init
     , i2c_deinit
     , i2c_queue_message
     , i2c_reconfigure
+    , i2c_load_dma_info
 };
 
