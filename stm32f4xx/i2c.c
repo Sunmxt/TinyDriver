@@ -527,6 +527,7 @@ void i2c_status_notify(TDrvI2CMeta *_meta)
     event = I2C_GetLastEvent(_meta -> regs);
     switch(event)
     {
+    case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
     case I2C_EVENT_MASTER_BYTE_TRANSMITTED:
         if(_meta -> running_msg -> address & 0x0001)
             break;
