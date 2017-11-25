@@ -47,6 +47,7 @@ TDRVStatus i2c_dma_realloc_stream(TDrvI2CMeta *_meta, uint8_t _is_receive)
             else
                 return TDRV_BUSY;
             status = TDRV_DMA_API(_meta -> dma1_device).StreamConnect(_meta -> dma1_device, _meta -> dma_stream, 7);
+            break;
         case I2C3_BASE:
             if( TDRV_OK == TDRV_DMA_API(_meta -> dma1_device).StreamAlloc(_meta -> dma1_device, 2))
                 _meta -> dma_stream = 2;
@@ -207,8 +208,8 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
 
 
             //If no restart condition is needed, generate stop condition.
-            if( !(msg -> attribute & TDRV_I2C_MSG_RESTART
-                && msg -> attribute & TDRV_I2C_MSG_PACKED) )
+            if( !((msg -> attribute & TDRV_I2C_MSG_RESTART)
+                && (msg -> attribute & TDRV_I2C_MSG_PACKED)) )
                 I2C_GenerateSTOP(_meta -> regs, ENABLE);
             
             //Check whether DMA Stream reallocation is needed.
@@ -227,7 +228,6 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
             //I2C_AnalogFilterCmd(_meta -> regs, ENABLE);
             //I2C_DigitalFilterConfig(_meta -> regs, 0x0F);
             I2C_Cmd(_meta -> regs, ENABLE);
-            I2C_AcknowledgeConfig(_meta -> regs, ENABLE);
         }
 
         I2C_ITConfig(_meta -> regs, I2C_IT_EVT, ENABLE);
@@ -236,6 +236,7 @@ TDRVStatus i2c_try_start_transfer(TDrvI2CMeta *_meta)
         // Initialize message address
         _meta -> running_msg -> address = 
             (_meta -> running_msg -> address & 0xFFFE) | ((_meta -> running_msg -> attribute & TDRV_I2C_MSG_RECEIVE) >> TDRV_I2C_MSG_RECEIVE_POS);
+        I2C_AcknowledgeConfig(_meta -> regs, DISABLE);
 
         status = i2c_dma_load_message(_meta, &loaded);
         if(!loaded)
@@ -469,6 +470,7 @@ TDRVStatus i2c_update_hardware(TDrvI2CMeta *meta)
 
 TDRVStatus i2c_queue_message(TDevice *_device, TDrvI2CMessage *_message)
 {
+	TDrvI2CMessage *msg;
     TDrvI2CMeta *meta;
     uint8_t old_flags;
     
@@ -476,6 +478,13 @@ TDRVStatus i2c_queue_message(TDevice *_device, TDrvI2CMessage *_message)
     i2c_update_hardware(meta);
 
     _message -> attribute |= TDRV_I2C_MSG_BUSY;
+    msg = _message;
+    while(msg ->node.prev)
+    {
+    	msg = TDRV_TO_I2C_MSG(_message ->node.prev);
+    	msg -> attribute |= TDRV_I2C_MSG_BUSY;
+    }
+
     old_flags = TDrvCriticalQueuePush(&meta -> queue, &_message -> node, I2C_RUNNING | I2C_NEW_MESSAGE);
     if(!(old_flags & I2C_RUNNING))
         return i2c_try_start_transfer(meta);
@@ -501,6 +510,8 @@ void i2c_error_handle(TDrvI2CMeta *_meta)
             if(_meta -> running_msg -> attribute & TDRV_I2C_MSG_PACKED)
             {
                 _meta -> running_msg -> attribute |= TDRV_I2C_FAILED;
+                if(error_ctx & 0X400) // No ACK
+                    _meta -> running_msg -> attribute |= TDRV_I2C_NO_ACK;
                 _meta -> running_msg -> failed_info = (void*)error_ctx;
                 i2c_notify_message_user(_meta -> running_msg);
                 _meta -> running_msg = msg;
@@ -508,6 +519,8 @@ void i2c_error_handle(TDrvI2CMeta *_meta)
                 continue;
             }
         }
+        if(error_ctx & 0X400) // No ACK
+            _meta -> running_msg -> attribute |= TDRV_I2C_NO_ACK;
         _meta -> running_msg -> attribute |= TDRV_I2C_FAILED;
         _meta -> running_msg -> failed_info = (void*)error_ctx;
         break;
@@ -525,6 +538,13 @@ void i2c_status_notify(TDrvI2CMeta *_meta)
     uint32_t event;
 
     event = I2C_GetLastEvent(_meta -> regs);
+    if(event & I2C_EVENT_MASTER_MODE_SELECT == I2C_EVENT_MASTER_MODE_SELECT)
+    {
+    	if(_meta -> running_msg -> address & 1)
+    	    I2C_AcknowledgeConfig(_meta -> regs, ENABLE);
+    	_meta -> regs -> DR = _meta -> running_msg -> address;
+        return;
+    }
     switch(event)
     {
     case I2C_EVENT_MASTER_BYTE_TRANSMITTING:
@@ -533,7 +553,6 @@ void i2c_status_notify(TDrvI2CMeta *_meta)
             break;
         if(_meta -> send_ptr == _meta -> running_msg -> size - 1)// Send last byte.
         {
-            I2C_ITConfig(_meta -> regs, I2C_IT_BUF, DISABLE);
             _meta -> regs -> DR = ((uint8_t*)_meta -> running_msg -> data)[_meta -> send_ptr];
             _meta -> send_ptr++;
         }
@@ -548,25 +567,20 @@ void i2c_status_notify(TDrvI2CMeta *_meta)
     case I2C_EVENT_MASTER_BYTE_RECEIVED | BTF_FLAG:
     case I2C_EVENT_MASTER_BYTE_RECEIVED:
     #undef BTF_FLAG
-        //if(!(_meta -> running_msg -> address & 0x0001))
-        //    break;
+        if(!(_meta -> running_msg -> address & 0x0001))
+            break;
         ((uint8_t*)_meta -> running_msg -> data)[_meta -> send_ptr] = _meta -> regs -> DR;
         I2C_AcknowledgeConfig(_meta -> regs, DISABLE);
         if(_meta -> running_msg -> size - _meta -> send_ptr == 2)
+        {
             I2C_DMACmd(_meta -> regs, DISABLE);
+            _meta -> send_ptr++;
+        }
         else if(_meta -> running_msg -> size - _meta -> send_ptr == 1)
             i2c_try_start_transfer(_meta);
-        _meta -> send_ptr++;
         break;
-
-    case I2C_EVENT_MASTER_MODE_SELECT:
-        /*
-            A new transaction begins.
-            Put slave address into bus.
-        */
-        _meta -> regs -> DR = _meta -> running_msg -> address;
-        break; 
     }
+
 }
 
 void I2C1_EV_IRQHandler(void)
