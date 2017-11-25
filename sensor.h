@@ -1,3 +1,6 @@
+#ifndef TINY_DRIVER_SENSOR
+#define TINY_DRIVER_SENSOR
+
 #include "tiny_driver.h"
 #include "klist.h"
 #include "manage.h"
@@ -5,8 +8,8 @@
 /* --- Sensor Feature ---- */
 typedef struct _Tiny_Driver_Sensor_State
 {
-    char* name;
-    char* vendor;
+    const char* name;
+    const char* vendor;
     uint32_t type;
     #define TSENS_UNKNOWN_TYPE      0
     #define TSENS_THERMOMETER       1
@@ -31,7 +34,7 @@ typedef struct _Tiny_Driver_Sensor_State
         The sensor will generate messages when the device is being listened to.
     */
         #define TSENS_CAN_LISTEN_POS        1
-        #define TSENS_CAN_LISTEN            (1u << TSENS_CAN_LISTEN)
+        #define TSENS_CAN_LISTEN            (1u << TSENS_CAN_LISTEN_POS)
 
     /* 
         Message Disabled
@@ -94,9 +97,8 @@ typedef struct _Tiny_Driver_Sensor_Hub_Listener
 {
     TDRV_HUB_LISTENER_COMMON_HEADER();
 
-    void (*callback)(TDevice *_device, struct _Tiny_Driver_Sensor_Hub_Listener *_listener, uint8_t _event, void *_params);
-    #define TSENS_NULL_EVENT        0
-    #define TSENS_DATA_UPDATED      1
+    #define TSENS_DATA_UPDATED      TDRV_LSNR_USER_MSG
+    #define TSENS_USER_MSG          (TDRV_LSNR_USER_MSG + 30)
     void *user_params;
 }TSensorHubListener;
 
@@ -109,21 +111,13 @@ typedef struct _Tiny_Driver_Sensor_Interface
     TDrvHAInit init;
     TDrvHADeinit deinit;
 
-    const TDrvSensorState*  (*GetState)(TDevice *_device);
+    const TSensorState*     (*GetState)(TDevice *_device);
     TDRVStatus              (*Read)(TDevice *_device, void* _data);
-    TDRVStatus              (*Update)(TDevice *_device, uint64_t _timestamp);
-    TDRVStatus              (*Listen)(TDevice *_device, TSensorListener *_token);
-    TDRVStatus              (*Unlisten)(TDevice *_device, TSensorListener *_token);
+    TDRVStatus              (*Update)(TDevice *_device);
+    TDRVStatus              (*Listen)(TDevice *_device, TSensorHubListener *_token);
+    TDRVStatus              (*Unlisten)(TDevice *_device, TSensorHubListener *_token);
 }TDrvSensorInterface;
 
-typedef struct _Tiny_Driver_Gyroscope_Interface
-{
-    TDrvHAinit init;
-    TDrvHADeinit deinit;
+#define TDRV_SENSOR_API(_device) TDRV_API(TDrvSensorInterface, _device)
 
-    const TDrvSensorState*  (*GetState)(TDevice *_device);
-    TDRVStatus              (*Read)(TDevice *_device, TSensorData *_data);
-    TDRVStatus              (*Update)(TDevice *_device, uint64_t _timestamp);
-    TDRVStatus              (*Listen)(TDevice *_device, TSensorLister *_token);
-    TDRVStatus              (*Unlisten)(TDevice *_device, TSensorListener *_token);
-}TDrvGyroInterface;
+#endif
